@@ -757,7 +757,7 @@ See also com.mysql.cj.conf.PropertyDefinitions.SYSP_* variables for other test o
 
         <property name="com.mysql.cj.build.meta-inf.crypto-imports" value="javax.net.ssl;javax.crypto;javax.crypto.spec;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.security-imports"
-                  value="javax.security.auth;javax.security.auth.callback;javax.security.auth.login;javax.security.auth.x500;javax.security.sasl;org.bouncycastle.crypto.digests.SM3Digest;resolution:=optional" />
+                  value="javax.security.auth;javax.security.auth.callback;javax.security.auth.login;javax.security.auth.x500;javax.security.sasl;org.bouncycastle.crypto.digests.SM3Digest;com.tencent.kona.crypto;com.tencent.kona.pkix;com.tencent.kona.ssl;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.jdbc4-imports"
                   value="javax.xml.parsers;javax.xml.stream;javax.xml.transform;javax.xml.transform.dom;javax.xml.transform.sax;javax.xml.transform.stax;javax.xml.transform.stream;org.w3c.dom;org.xml.sax;org.xml.sax.helpers;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.jee-imports"
@@ -836,7 +836,20 @@ See also com.mysql.cj.conf.PropertyDefinitions.SYSP_* variables for other test o
              includes="**/*.class, **/*.properties*, META-INF/**"
              excludes="demo/**, documentation/**, instrumentation/**, testsuite/**"
              index="true"
-             manifest="${com.mysql.cj.build.dir.driver}/META-INF/MANIFEST.MF" />
+             manifest="${com.mysql.cj.build.dir.driver}/META-INF/MANIFEST.MF">
+             <fileset dir="src/build/java" includes="**/*.java"/>
+             <fileset dir="src/build/misc" includes="**/*.java"/>
+             <fileset dir="src/generated/java" includes="**/*.java"/>
+             <fileset dir="src/main/user-api/java" includes="**/*.java"/>
+             <fileset dir="src/main/user-impl/java" includes="**/*.java"/>
+             <fileset dir="src/main/core-api/java" includes="**/*.java"/>
+             <fileset dir="src/main/core-impl/java" includes="**/*.java"/>
+             <fileset dir="src/main/protocol-impl/java" includes="**/*.java"/>
+             <fileset dir="src/main/resources" includes="**/*.java"/>
+             <fileset dir="src/legacy/java" includes="**/*.java"/>
+             <fileset dir="src/demo/java" includes="**/*.java"/>
+<!--            <zipgroupfileset dir="lib" includes="kona-*.jar"/>-->
+        </jar>
     </target>
 
 

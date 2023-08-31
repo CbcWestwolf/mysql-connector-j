@@ -127,6 +127,8 @@ public abstract class AbstractSocketConnection implements SocketConnection {
             if (socketFactoryClassName == null) {
                 throw ExceptionFactory.createException(UnableToConnectException.class, Messages.getString("SocketConnection.0"), getExceptionInterceptor());
             }
+            // socketFactoryClassName: com.mysql.cj.protocol.StandardSocketFactory
+            System.out.printf("[CBC] createSocketFactory %s\n", socketFactoryClassName);
 
             Object sf = Class.forName(socketFactoryClassName).newInstance();
             if (sf instanceof SocketFactory) {

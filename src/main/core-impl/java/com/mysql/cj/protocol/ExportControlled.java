@@ -90,6 +90,7 @@ import javax.security.auth.x500.X500Principal;
 import com.mysql.cj.ServerVersion;
 import com.mysql.cj.conf.PropertyDefinitions;
 import com.mysql.cj.conf.PropertyDefinitions.SslMode;
+import com.mysql.cj.conf.PropertyDefinitions.TlcpMode;
 import com.mysql.cj.conf.PropertyKey;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.conf.RuntimeProperty;
@@ -103,6 +104,12 @@ import com.mysql.cj.log.Log;
 import com.mysql.cj.util.Base64Decoder;
 import com.mysql.cj.util.StringUtils;
 
+import com.tencent.kona.crypto.KonaCryptoProvider;
+import com.tencent.kona.pkix.KonaPKIXProvider;
+import com.tencent.kona.ssl.KonaSSLProvider;
+import com.tencent.kona.pkix.PKIXInsts;
+import com.tencent.kona.sun.security.ssl.TLCPContextImpl;
+
 /**
  * Holds functionality that falls under export-control regulations.
  */
@@ -111,6 +118,9 @@ public class ExportControlled {
     private static final String TLSv1_1 = "TLSv1.1";
     private static final String TLSv1_2 = "TLSv1.2";
     private static final String TLSv1_3 = "TLSv1.3";
+    private static final String TLCPv1_1 = "TLCPv1.1";
+    private static final String TLCPv1 = "TLCPv1";
+    private static final String[] KNOWN_TLCP_PROTOCOLS = new String[] {TLCPv1_1, TLCPv1};
     private static final String[] KNOWN_TLS_PROTOCOLS = new String[] { TLSv1_3, TLSv1_2, TLSv1_1, TLSv1 };
     private static final String[] VALID_TLS_PROTOCOLS = new String[] { TLSv1_3, TLSv1_2 };
 
@@ -119,6 +129,16 @@ public class ExportControlled {
     private static final List<String> RESTRICTED_CIPHER_SUBSTR = new ArrayList<>();
 
     static {
+        java.security.Security.insertProviderAt(new KonaCryptoProvider(), 1);
+        java.security.Security.insertProviderAt(new KonaPKIXProvider(), 2);
+        java.security.Security.insertProviderAt(new KonaSSLProvider(), 3);
+
+        System.out.printf("[CBC] current providers: ");
+        for (java.security.Provider p : java.security.Security.getProviders() ) {
+            System.out.printf("%s ", p.getName());
+        }
+        System.out.println();
+
         try {
             Properties tlsSettings = new Properties();
             tlsSettings.load(ExportControlled.class.getResourceAsStream(TLS_SETTINGS_RESOURCE));
@@ -272,6 +292,22 @@ public class ExportControlled {
         return new KeyStoreConf(trustStoreUrl, trustStorePassword, trustStoreType);
     }
 
+    private static KeyStoreConf getTlcpTrustStoreConf(PropertySet propertySet, boolean required) {
+        String url = propertySet.getStringProperty(PropertyKey.trustTlcpCertificateKeyStoreUrl).getValue();
+        // check URL
+        if (!StringUtils.isNullOrEmpty(url)) {
+            try {
+                new URL(url);
+            } catch (MalformedURLException e) {
+                url = "file:" + url;
+            }
+        }
+        if (required && StringUtils.isNullOrEmpty(url)) {
+            throw new CJCommunicationsException("No truststore provided to verify the Server certificate.");
+        }
+        return new KeyStoreConf(url, "", "JKS");
+    }
+
     private static KeyStoreConf getKeyStoreConf(PropertySet propertySet) {
         String keyStoreUrl = propertySet.getStringProperty(PropertyKey.clientCertificateKeyStoreUrl).getValue();
         String keyStorePassword = propertySet.getStringProperty(PropertyKey.clientCertificateKeyStorePassword).getValue();
@@ -344,6 +380,50 @@ public class ExportControlled {
             sslSocket.setEnabledCipherSuites(allowedCiphers);
         }
 
+        sslSocket.startHandshake();
+        return sslSocket;
+    }
+
+    public static Socket performTlcpHandshake(Socket rawSocket, SocketConnection socketConnection, ServerVersion serverVersion, Log log)
+            throws IOException, SSLParamsException, FeatureNotAvailableException{
+        PropertySet pset = socketConnection.getPropertySet();
+
+        System.out.printf("[CBC] ExportControlled.performTlcpHandshake() \n");
+        TlcpMode tlcpMode = pset.<TlcpMode>getEnumProperty(PropertyKey.tlcpMode).getValue();
+        KeyStoreConf trustStoreConf = getTlcpTrustStoreConf(pset, serverVersion == null);
+        SSLContext sslContext;
+
+        {
+            List<TrustManager> tms = new ArrayList<>();
+            InputStream trustStoreIS = null;
+            KeyStore trustKeyStore = null;
+            TrustManagerFactory tmf = null;
+            try {
+                String trustDefaultAlg = TrustManagerFactory.getDefaultAlgorithm();
+                tmf = TrustManagerFactory.getInstance(trustDefaultAlg);
+                trustStoreIS = new URL(trustStoreConf.keyStoreUrl).openStream();
+                trustKeyStore = PKIXInsts.getKeyStore("JKS");
+                trustKeyStore.load(trustStoreIS, "".toCharArray());
+                tmf.init(trustKeyStore); // (trustKeyStore == null) initializes the TrustManagerFactory with the default truststore.
+                TrustManager[] origTms = tmf.getTrustManagers();
+                tms.addAll(Arrays.asList(origTms));
+                sslContext = SSLContext.getInstance("TLCPv1.1");
+                sslContext.init(null, tms.toArray(new TrustManager[0]), null);
+            } catch  (NoSuchAlgorithmException nsae) {
+                throw new SSLParamsException("TLS is not a valid TLCP protocol.", nsae);
+            } catch (KeyManagementException kme) {
+                throw new SSLParamsException("KeyManagementException: " + kme.getMessage(), kme);
+            } catch (KeyStoreException e) {
+                throw ExceptionFactory.createException(SSLParamsException.class, "Could not create KeyStore instance [" + e.getMessage() + "]", e,
+                        socketConnection.getExceptionInterceptor());
+            } catch (CertificateException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        SSLSocket sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(rawSocket, socketConnection.getHost(), socketConnection.getPort(), true);
+        sslSocket.setEnabledProtocols(new String[] { "TLCPv1.1" });
+        // FIXME: support more cipher
+        sslSocket.setEnabledCipherSuites(new String[] { "TLCP_ECC_SM4_CBC_SM3" });
         sslSocket.startHandshake();
         return sslSocket;
     }
@@ -532,6 +612,8 @@ public class ExportControlled {
         String trustCertificateKeyStoreUrl = trustCertificateKeyStore.keyStoreUrl;
         String trustCertificateKeyStoreType = trustCertificateKeyStore.keyStoreType;
         String trustCertificateKeyStorePassword = trustCertificateKeyStore.keyStorePassword;
+        System.out.printf("[CBC] ExportControlled.getSSLContext verifyServerCert: %d, clientUrl: %s, clientType: %s, trustUrl: %s, trustType: %s\n",
+                verifyServerCert?1:0, clientCertificateKeyStoreUrl, clientCertificateKeyStoreType, trustCertificateKeyStoreUrl, trustCertificateKeyStoreType);
 
         TrustManagerFactory tmf = null;
         KeyManagerFactory kmf = null;
@@ -540,8 +622,11 @@ public class ExportControlled {
         List<TrustManager> tms = new ArrayList<>();
 
         try {
-            tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            String trustDefaultAlg = TrustManagerFactory.getDefaultAlgorithm(),
+                    keyDefaultAlg = KeyManagerFactory.getDefaultAlgorithm();
+            System.out.printf("[CBC] ExportControlled.getSSLContext: trustDefaultAlg: %s, keyDefaultAlg: %s\n",trustDefaultAlg, keyDefaultAlg);
+            tmf = TrustManagerFactory.getInstance(trustDefaultAlg);
+            kmf = KeyManagerFactory.getInstance(keyDefaultAlg);
         } catch (NoSuchAlgorithmException nsae) {
             throw ExceptionFactory.createException(SSLParamsException.class,
                     "Default algorithm definitions for TrustManager and/or KeyManager are invalid.  Check java security properties file.", nsae,

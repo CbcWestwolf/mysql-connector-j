@@ -79,6 +79,12 @@ public interface SocketConnection {
         performTlsHandshake(serverSession);
     }
 
+    void performTlcpHandshake(ServerSession serverSession) throws SSLParamsException, FeatureNotAvailableException, IOException;
+
+    default void performTlcpHandshake(ServerSession serverSession, Log log) throws SSLParamsException, FeatureNotAvailableException, IOException {
+        performTlsHandshake(serverSession);
+    }
+
     void forceClose();
 
     NetworkResources getNetworkResources();

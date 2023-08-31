@@ -208,6 +208,10 @@ public class XProtocol extends AbstractProtocol<XMessage> implements Protocol<XM
         readQueryResult(new OkBuilder());
     }
 
+    public void negotiateTLCPConnection() {
+        // FIXME
+    }
+
     public void negotiateSSLConnection() {
 
         if (!ExportControlled.enabled()) {

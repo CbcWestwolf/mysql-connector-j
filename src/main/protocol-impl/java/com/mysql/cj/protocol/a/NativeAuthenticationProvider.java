@@ -41,6 +41,7 @@ import com.mysql.cj.Messages;
 import com.mysql.cj.callback.MysqlCallbackHandler;
 import com.mysql.cj.callback.UsernameCallback;
 import com.mysql.cj.conf.PropertyDefinitions.SslMode;
+import com.mysql.cj.conf.PropertyDefinitions.TlcpMode;
 import com.mysql.cj.conf.PropertyKey;
 import com.mysql.cj.conf.PropertySet;
 import com.mysql.cj.conf.RuntimeProperty;
@@ -134,6 +135,13 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
 
         SslMode sslMode = this.propertySet.<SslMode>getEnumProperty(PropertyKey.sslMode).getValue();
         int capabilityFlags = capabilities.getCapabilityFlags();
+
+        System.out.printf("[CBC] connect: %s %s %s\n",user, pass, db);
+        System.out.printf("[CBC] sslMode: %s, tlcpMode: %s\n",
+                this.propertySet.<SslMode>getEnumProperty(PropertyKey.sslMode).getStringValue(),
+                this.propertySet.<SslMode>getEnumProperty(PropertyKey.tlcpMode).getStringValue());
+        System.out.printf("[CBC] CIENT_SSL: %d, CIENT_TLCP: %d\n", ((capabilityFlags & NativeServerSession.CLIENT_SSL) != 0) ? 1 : 0, ((capabilityFlags & NativeServerSession.CLIENT_TLCP) != 0) ? 1 : 0);
+
         if (((capabilityFlags & NativeServerSession.CLIENT_SSL) == 0) && sslMode != SslMode.DISABLED && sslMode != SslMode.PREFERRED) {
             // check SSL availability
             throw ExceptionFactory.createException(UnableToConnectException.class, Messages.getString("MysqlIO.15"), getExceptionInterceptor());
@@ -172,6 +180,8 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
                         capabilityFlags & NativeServerSession.CLIENT_INTERACTIVE : 0) //
                 | (this.propertySet.<SslMode>getEnumProperty(PropertyKey.sslMode).getValue() != SslMode.DISABLED ? //
                         capabilityFlags & NativeServerSession.CLIENT_SSL : 0) //
+                | (this.propertySet.<TlcpMode>getEnumProperty(PropertyKey.tlcpMode).getValue() != TlcpMode.DISABLED ? //
+                        capabilityFlags & NativeServerSession.CLIENT_TLCP : 0) //
                 | capabilityFlags & NativeServerSession.CLIENT_TRANSACTIONS // Required to get server status values.
                 | NativeServerSession.CLIENT_SECURE_CONNECTION //
                 | (this.propertySet.getBooleanProperty(PropertyKey.allowMultiQueries).getValue() ? //
@@ -192,9 +202,14 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
 
         sessState.setClientParam(clientParam);
 
+        System.out.printf("[CBC] NativeAuthenticationProvider.connect()\n");
         /* First, negotiate SSL connection */
         if ((clientParam & NativeServerSession.CLIENT_SSL) != 0) {
+            System.out.printf("[CBC] NativeAuthenticationProvider.connect() CLIENT_SSL\n");
             this.protocol.negotiateSSLConnection();
+        } else if ((clientParam & NativeServerSession.CLIENT_TLCP) != 0) {
+            System.out.printf("[CBC] NativeAuthenticationProvider.connect() CLIENT_TLCP\n");
+            this.protocol.negotiateTLCPConnection();
         }
 
         if (buf.isOKPacket()) {

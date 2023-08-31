@@ -151,6 +151,10 @@ public class PropertyDefinitions {
         PREFERRED, REQUIRED, VERIFY_CA, VERIFY_IDENTITY, DISABLED;
     }
 
+    public enum TlcpMode {
+        PREFERRED, REQUIRED, /*VERIFY_CA, VERIFY_IDENTITY,*/ DISABLED;
+    }
+
     public enum XdevapiSslMode {
         REQUIRED, VERIFY_CA, VERIFY_IDENTITY, DISABLED;
     }
@@ -342,6 +346,11 @@ public class PropertyDefinitions {
 
                 new EnumPropertyDefinition<>(PropertyKey.sslMode, SslMode.PREFERRED, RUNTIME_MODIFIABLE, Messages.getString("ConnectionProperties.sslMode"),
                         "8.0.13", CATEGORY_SECURITY, 4),
+
+                new EnumPropertyDefinition<>(PropertyKey.tlcpMode, TlcpMode.DISABLED, RUNTIME_NOT_MODIFIABLE, Messages.getString("ConnectionProperties.tlcpMode"),
+                        "8.0.13",CATEGORY_SECURITY, Integer.MAX_VALUE),
+                new StringPropertyDefinition(PropertyKey.trustTlcpCertificateKeyStoreUrl, DEFAULT_VALUE_NULL_STRING, RUNTIME_NOT_MODIFIABLE,
+                        Messages.getString("ConnectionProperties.trustTlcpCertificateKeyStoreUrl"), "5.1.0", CATEGORY_SECURITY, Integer.MAX_VALUE),
 
                 new StringPropertyDefinition(PropertyKey.trustCertificateKeyStoreUrl, DEFAULT_VALUE_NULL_STRING, RUNTIME_MODIFIABLE,
                         Messages.getString("ConnectionProperties.trustCertificateKeyStoreUrl"), "5.1.0", CATEGORY_SECURITY, 5),

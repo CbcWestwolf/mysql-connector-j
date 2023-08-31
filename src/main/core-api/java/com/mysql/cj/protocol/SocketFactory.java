@@ -115,6 +115,12 @@ public interface SocketFactory extends SocketMetadata {
         return performTlsHandshake(socketConnection, serverSession);
     }
 
+    <T extends Closeable> T performTlcpHandshake(SocketConnection socketConnection, ServerSession serverSession) throws IOException;
+
+    default <T extends Closeable> T performTlcpHandshake(SocketConnection socketConnection, ServerSession serverSession, Log log) throws IOException {
+        return performTlcpHandshake(socketConnection, serverSession);
+    }
+
     /**
      * Called by the driver after completing the MySQL protocol handshake and
      * reading the results of the authentication.

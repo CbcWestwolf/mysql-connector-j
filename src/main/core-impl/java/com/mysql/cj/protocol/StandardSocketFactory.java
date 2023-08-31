@@ -193,6 +193,19 @@ public class StandardSocketFactory implements SocketFactory {
         return (T) this.sslSocket;
     }
 
+    @Override
+    public <T extends Closeable> T performTlcpHandshake(SocketConnection socketConnection, ServerSession serverSession) throws IOException {
+        return performTlcpHandshake(socketConnection, serverSession, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Closeable> T performTlcpHandshake(SocketConnection socketConnection, ServerSession serverSession, Log log) throws IOException {
+        this.sslSocket = ExportControlled.performTlcpHandshake(this.rawSocket, socketConnection, serverSession == null ? null : serverSession.getServerVersion(),
+                log);
+        return (T) this.sslSocket;
+    }
+
     public void afterHandshake() throws IOException {
         resetLoginTimeCountdown();
         this.rawSocket.setSoTimeout(this.socketTimeoutBackup);

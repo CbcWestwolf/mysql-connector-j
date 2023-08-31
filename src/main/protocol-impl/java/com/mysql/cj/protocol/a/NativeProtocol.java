@@ -346,6 +346,44 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
     }
 
     /**
+     * Negotiates the TLCP communications channel used when connecting
+     * to a MySQL server that understands TLCP.
+     */
+    @Override
+    public void negotiateTLCPConnection() {
+        System.out.printf("[CBC] negotiateTLCPConnection\n");
+
+        if (!ExportControlled.enabled()) {
+            throw new CJConnectionFeatureNotAvailableException(this.getPropertySet(), this.serverSession, this.getPacketSentTimeHolder(), null);
+        }
+
+        long clientParam = this.serverSession.getClientParam();
+
+        NativePacketPayload packet = new NativePacketPayload(SSL_REQUEST_LENGTH);
+        packet.writeInteger(IntegerDataType.INT4, clientParam);
+        packet.writeInteger(IntegerDataType.INT4, NativeConstants.MAX_PACKET_SIZE);
+        packet.writeInteger(IntegerDataType.INT1, this.serverSession.getCharsetSettings().configurePreHandshake(false));
+        packet.writeBytes(StringLengthDataType.STRING_FIXED, new byte[23]);  // Set of bytes reserved for future use.
+
+        send(packet, packet.getPosition());
+
+        try {
+            System.out.printf("[CBC] negotiateTLCPConnection try\n");
+            this.socketConnection.performTlcpHandshake(this.serverSession, this.log);
+
+            // i/o streams were replaced, build new packet sender/reader
+            this.packetSender = new SimplePacketSender(this.socketConnection.getMysqlOutput());
+            this.packetReader = new SimplePacketReader(this.socketConnection, this.maxAllowedPacket);
+
+        } catch (FeatureNotAvailableException nae) {
+            throw new CJConnectionFeatureNotAvailableException(this.getPropertySet(), this.serverSession, this.getPacketSentTimeHolder(), nae);
+        } catch (IOException ioEx) {
+            throw ExceptionFactory.createCommunicationsException(this.propertySet, this.serverSession, this.getPacketSentTimeHolder(),
+                    this.getPacketReceivedTimeHolder(), ioEx, getExceptionInterceptor());
+        }
+    }
+
+    /**
      * Negotiates the SSL communications channel used when connecting
      * to a MySQL server that understands SSL.
      */
@@ -366,6 +404,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         send(packet, packet.getPosition());
 
         try {
+            System.out.printf("[CBC] negotiateSSLConnection\n");
             this.socketConnection.performTlsHandshake(this.serverSession, this.log);
 
             // i/o streams were replaced, build new packet sender/reader
@@ -421,7 +460,6 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
 
         // Read the first packet
         this.serverSession.setCapabilities(readServerCapabilities());
-
     }
 
     @Override
@@ -1429,6 +1467,7 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         // session creation & initialization happens here
 
         beforeHandshake();
+        System.out.printf("[CBC] NativeProtocol.connect %s\n", user);
 
         this.authProvider.connect(user, password, database);
     }

@@ -108,6 +108,7 @@ public interface Protocol<M extends Message> {
     void connect(String user, String password, String database);
 
     void negotiateSSLConnection();
+    void negotiateTLCPConnection();
 
     void beforeHandshake();
 

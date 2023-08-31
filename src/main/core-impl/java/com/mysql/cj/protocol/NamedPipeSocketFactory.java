@@ -240,6 +240,12 @@ public class NamedPipeSocketFactory implements SocketFactory {
         return (T) this.namedPipeSocket;
     }
 
+    @Override
+    public <T extends Closeable> T performTlcpHandshake(SocketConnection socketConnection, ServerSession serverSession) throws IOException {
+        // TODO
+        return performTlsHandshake(socketConnection, serverSession, null);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T extends Closeable> T connect(String host, int portNumber /* ignored */, PropertySet props, int loginTimeout) throws IOException {

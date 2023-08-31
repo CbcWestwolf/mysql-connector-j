@@ -36,6 +36,7 @@ import java.util.Properties;
 
 import com.mysql.cj.Messages;
 import com.mysql.cj.conf.PropertyDefinitions.SslMode;
+import com.mysql.cj.conf.PropertyDefinitions.TlcpMode;
 import com.mysql.cj.exceptions.CJException;
 import com.mysql.cj.exceptions.ExceptionFactory;
 import com.mysql.cj.exceptions.WrongArgumentException;
@@ -219,6 +220,10 @@ public class DefaultPropertySet implements PropertySet, Serializable {
                     }
                 }
             }
+
+            RuntimeProperty<TlcpMode> tlcpMode = this.<TlcpMode> getEnumProperty(PropertyKey.tlcpMode);
+            System.out.printf("[CBC] tlcpMode: %s, url: %s\n", tlcpMode.getStringValue(),
+                    getStringProperty(PropertyKey.trustTlcpCertificateKeyStoreUrl).getValue());
 
             // add user-defined properties
             for (Object key : infoCopy.keySet()) {

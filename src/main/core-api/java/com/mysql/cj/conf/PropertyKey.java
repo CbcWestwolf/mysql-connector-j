@@ -219,6 +219,7 @@ public enum PropertyKey {
     socksProxyPort("socksProxyPort", true), //
     socksProxyRemoteDns("socksProxyRemoteDns", true), //
     sslMode("sslMode", true), //
+    tlcpMode("tlcpMode", true), //
     strictUpdates("strictUpdates", true), //
     tcpKeepAlive("tcpKeepAlive", true), //
     tcpNoDelay("tcpNoDelay", true), //
@@ -235,6 +236,7 @@ public enum PropertyKey {
     trustCertificateKeyStorePassword("trustCertificateKeyStorePassword", true), //
     trustCertificateKeyStoreType("trustCertificateKeyStoreType", true), //
     trustCertificateKeyStoreUrl("trustCertificateKeyStoreUrl", true), //
+    trustTlcpCertificateKeyStoreUrl("trustTlcpCertificateKeyStoreUrl", true), //
     ultraDevHack("ultraDevHack", true), //
     useAffectedRows("useAffectedRows", true), //
     useColumnNamesInFindColumn("useColumnNamesInFindColumn", true), //

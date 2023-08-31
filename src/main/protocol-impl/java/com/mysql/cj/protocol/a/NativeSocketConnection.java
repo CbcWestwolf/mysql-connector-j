@@ -106,6 +106,22 @@ public class NativeSocketConnection extends AbstractSocketConnection implements 
 
         this.mysqlOutput = new BufferedOutputStream(getMysqlSocket().getOutputStream(), 16384);
         this.mysqlOutput.flush();
+    }
 
+    @Override
+    public void performTlcpHandshake(ServerSession serverSession) throws SSLParamsException, FeatureNotAvailableException, IOException {
+        performTlcpHandshake(serverSession, null);
+    }
+
+    @Override
+    public void performTlcpHandshake(ServerSession serverSession, Log log) throws SSLParamsException, FeatureNotAvailableException, IOException {
+        this.mysqlSocket = this.socketFactory.performTlcpHandshake(this, serverSession, log);
+
+        this.mysqlInput = new FullReadInputStream(
+                this.propertySet.getBooleanProperty(PropertyKey.useUnbufferedInput).getValue() ? getMysqlSocket().getInputStream()
+                        : new BufferedInputStream(getMysqlSocket().getInputStream(), 16384));
+
+        this.mysqlOutput = new BufferedOutputStream(getMysqlSocket().getOutputStream(), 16384);
+        this.mysqlOutput.flush();
     }
 }
