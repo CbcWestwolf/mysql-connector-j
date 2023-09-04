@@ -422,8 +422,12 @@ public class ExportControlled {
         }
         SSLSocket sslSocket = (SSLSocket) sslContext.getSocketFactory().createSocket(rawSocket, socketConnection.getHost(), socketConnection.getPort(), true);
         sslSocket.setEnabledProtocols(new String[] { "TLCPv1.1" });
-        // FIXME: support more cipher
-        sslSocket.setEnabledCipherSuites(new String[] { "TLCP_ECC_SM4_CBC_SM3" });
+        sslSocket.setEnabledCipherSuites(new String[] {
+                "TLCP_ECC_SM4_GCM_SM3",
+                "TLCP_ECC_SM4_CBC_SM3",
+                "TLCP_ECDHE_SM4_GCM_SM3",
+                "TLCP_ECDHE_SM4_CBC_SM3"
+        });
         sslSocket.startHandshake();
         return sslSocket;
     }
