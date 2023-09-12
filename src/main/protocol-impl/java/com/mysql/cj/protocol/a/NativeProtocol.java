@@ -351,8 +351,6 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
      */
     @Override
     public void negotiateTLCPConnection() {
-        System.out.printf("[CBC] negotiateTLCPConnection\n");
-
         if (!ExportControlled.enabled()) {
             throw new CJConnectionFeatureNotAvailableException(this.getPropertySet(), this.serverSession, this.getPacketSentTimeHolder(), null);
         }
@@ -368,7 +366,6 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         send(packet, packet.getPosition());
 
         try {
-            System.out.printf("[CBC] negotiateTLCPConnection try\n");
             this.socketConnection.performTlcpHandshake(this.serverSession, this.log);
 
             // i/o streams were replaced, build new packet sender/reader
@@ -404,7 +401,6 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         send(packet, packet.getPosition());
 
         try {
-            System.out.printf("[CBC] negotiateSSLConnection\n");
             this.socketConnection.performTlsHandshake(this.serverSession, this.log);
 
             // i/o streams were replaced, build new packet sender/reader
@@ -1467,7 +1463,6 @@ public class NativeProtocol extends AbstractProtocol<NativePacketPayload> implem
         // session creation & initialization happens here
 
         beforeHandshake();
-        System.out.printf("[CBC] NativeProtocol.connect %s\n", user);
 
         this.authProvider.connect(user, password, database);
     }

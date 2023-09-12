@@ -133,12 +133,6 @@ public class ExportControlled {
         java.security.Security.insertProviderAt(new KonaPKIXProvider(), 2);
         java.security.Security.insertProviderAt(new KonaSSLProvider(), 3);
 
-        System.out.printf("[CBC] current providers: ");
-        for (java.security.Provider p : java.security.Security.getProviders() ) {
-            System.out.printf("%s ", p.getName());
-        }
-        System.out.println();
-
         try {
             Properties tlsSettings = new Properties();
             tlsSettings.load(ExportControlled.class.getResourceAsStream(TLS_SETTINGS_RESOURCE));
@@ -388,8 +382,6 @@ public class ExportControlled {
             throws IOException, SSLParamsException, FeatureNotAvailableException{
         PropertySet pset = socketConnection.getPropertySet();
 
-        System.out.printf("[CBC] ExportControlled.performTlcpHandshake() \n");
-        TlcpMode tlcpMode = pset.<TlcpMode>getEnumProperty(PropertyKey.tlcpMode).getValue();
         KeyStoreConf trustStoreConf = getTlcpTrustStoreConf(pset, serverVersion == null);
         SSLContext sslContext;
 
@@ -616,8 +608,6 @@ public class ExportControlled {
         String trustCertificateKeyStoreUrl = trustCertificateKeyStore.keyStoreUrl;
         String trustCertificateKeyStoreType = trustCertificateKeyStore.keyStoreType;
         String trustCertificateKeyStorePassword = trustCertificateKeyStore.keyStorePassword;
-        System.out.printf("[CBC] ExportControlled.getSSLContext verifyServerCert: %d, clientUrl: %s, clientType: %s, trustUrl: %s, trustType: %s\n",
-                verifyServerCert?1:0, clientCertificateKeyStoreUrl, clientCertificateKeyStoreType, trustCertificateKeyStoreUrl, trustCertificateKeyStoreType);
 
         TrustManagerFactory tmf = null;
         KeyManagerFactory kmf = null;
@@ -628,7 +618,6 @@ public class ExportControlled {
         try {
             String trustDefaultAlg = TrustManagerFactory.getDefaultAlgorithm(),
                     keyDefaultAlg = KeyManagerFactory.getDefaultAlgorithm();
-            System.out.printf("[CBC] ExportControlled.getSSLContext: trustDefaultAlg: %s, keyDefaultAlg: %s\n",trustDefaultAlg, keyDefaultAlg);
             tmf = TrustManagerFactory.getInstance(trustDefaultAlg);
             kmf = KeyManagerFactory.getInstance(keyDefaultAlg);
         } catch (NoSuchAlgorithmException nsae) {

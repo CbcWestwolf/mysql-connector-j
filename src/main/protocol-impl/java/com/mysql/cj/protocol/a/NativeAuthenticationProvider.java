@@ -135,13 +135,6 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
 
         SslMode sslMode = this.propertySet.<SslMode>getEnumProperty(PropertyKey.sslMode).getValue();
         int capabilityFlags = capabilities.getCapabilityFlags();
-
-        System.out.printf("[CBC] connect: %s %s %s\n",user, pass, db);
-        System.out.printf("[CBC] sslMode: %s, tlcpMode: %s\n",
-                this.propertySet.<SslMode>getEnumProperty(PropertyKey.sslMode).getStringValue(),
-                this.propertySet.<SslMode>getEnumProperty(PropertyKey.tlcpMode).getStringValue());
-        System.out.printf("[CBC] CIENT_SSL: %d, CIENT_TLCP: %d\n", ((capabilityFlags & NativeServerSession.CLIENT_SSL) != 0) ? 1 : 0, ((capabilityFlags & NativeServerSession.CLIENT_TLCP) != 0) ? 1 : 0);
-
         if (((capabilityFlags & NativeServerSession.CLIENT_SSL) == 0) && sslMode != SslMode.DISABLED && sslMode != SslMode.PREFERRED) {
             // check SSL availability
             throw ExceptionFactory.createException(UnableToConnectException.class, Messages.getString("MysqlIO.15"), getExceptionInterceptor());
@@ -202,13 +195,10 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
 
         sessState.setClientParam(clientParam);
 
-        System.out.printf("[CBC] NativeAuthenticationProvider.connect()\n");
         /* First, negotiate SSL connection */
         if ((clientParam & NativeServerSession.CLIENT_SSL) != 0) {
-            System.out.printf("[CBC] NativeAuthenticationProvider.connect() CLIENT_SSL\n");
             this.protocol.negotiateSSLConnection();
         } else if ((clientParam & NativeServerSession.CLIENT_TLCP) != 0) {
-            System.out.printf("[CBC] NativeAuthenticationProvider.connect() CLIENT_TLCP\n");
             this.protocol.negotiateTLCPConnection();
         }
 
